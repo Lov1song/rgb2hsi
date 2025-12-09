@@ -284,26 +284,5 @@ trainer.train()  # 从第51个epoch继续
    - 混合批次增强 (MixUp/CutMix)
    - 自适应增强
 
-## 📚 参考文献
-
-- CLIP: Learning Transferable Models for Computer Vision Tasks (OpenAI)
-- Attention is All You Need (Vaswani et al.)
-- U-Net: Convolutional Networks for Biomedical Image Segmentation
-- 高光谱图像处理相关论文
-
-## 📝 许可证
-
-MIT License
-
-## 👥 贡献
-
-欢迎提交Issue和Pull Request！
-
-## 📞 联系方式
-
-如有问题或建议，请提交Issue或联系项目维护者。
-
----
-
 **最后更新**: 2025-12-09
 **版本**: 1.0.0
