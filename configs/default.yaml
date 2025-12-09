@@ -1,0 +1,165 @@
+# configs/default.yaml
+
+project_name: RGB2HSI-MultimodalCLIP
+
+# ============================================================================
+# 路径配置
+# ============================================================================
+paths:
+  real_pair: data/real_pair
+  synthetic_pair: data/synthetic_pair
+  unpaired_rgb: data/unpaired_rgb
+  unpaired_hsi: data/unpaired_hsi
+  save_dir: checkpoints
+  log_dir: logs
+  results_dir: results
+
+# ============================================================================
+# 训练配置
+# ============================================================================
+training:
+  epochs: 200
+  batch_size: 32
+  lr: 1e-4
+  weight_decay: 1e-6
+  num_workers: 4
+  save_interval: 10
+  eval_interval: 5
+  warmup_epochs: 5
+  
+  # 梯度累积和精度
+  gradient_accumulation_steps: 4
+  mixed_precision: false  # 混合精度训练
+  
+  # 数据加载
+  pin_memory: true
+  prefetch_factor: 2
+  persistent_workers: false
+
+# ============================================================================
+# 模型架构配置
+# ============================================================================
+model:
+  # Vision encoder (RGB)
+  rgb_encoder:
+    name: "ResNet50"  # ResNet18, ResNet50, ViT-Base
+    pretrained: true
+    frozen_bn: false
+    hidden_dim: 512
+  
+  # Spectral encoder (HSI)
+  hsi_encoder:
+    name: "SpectralUNet"
+    in_channels: 31
+    hidden_dim: 256
+    num_layers: 4
+  
+  # Fusion module
+  fusion_module:
+    name: "CrossAttentionFusion"
+    dim: 512
+    num_heads: 8
+    num_layers: 3
+    dropout: 0.1
+  
+  # Decoder
+  decoder:
+    name: "SpectralDecoder"
+    num_bands: 31
+    hidden_dim: 256
+  
+  # Projection heads (CLIP-style)
+  projection_head:
+    hidden_dim: 512
+    output_dim: 256
+    dropout: 0.1
+  
+  # Shared embedding space
+  embedding_dim: 256
+
+# ============================================================================
+# 损失函数配置
+# ============================================================================
+loss:
+  type: "HybridCLIPLoss"
+  
+  # 主要损失权重
+  weights:
+    l1: 1.0
+    spectral: 1.0
+    perceptual: 0.5
+    contrastive: 1.0
+    reconstruction: 1.0
+  
+  # Patch-based shift-invariant loss 配置
+  patch:
+    weight: 0.5
+    patch_size: 16
+    search_radius: 4
+    stride: 16
+    downscale: 2
+  
+  # 对比学习配置
+  contrastive:
+    temperature: 0.07
+    loss_type: "ntxent"  # ntxent, cosface, arcface
+  
+  # 光谱约束
+  spectral:
+    smooth_weight: 0.5
+    prior_weight: 0.3
+  
+  # 感知损失
+  perceptual:
+    layers: ["relu3_4"]
+    use_pretrained: true
+
+# ============================================================================
+# 优化器配置
+# ============================================================================
+optimizer:
+  type: "adamw"
+  betas: [0.9, 0.999]
+  eps: 1e-8
+  lr_scheduler:
+    type: "cosine"  # linear, cosine, exponential
+    warmup_steps: 500
+    min_lr: 1e-6
+
+# ============================================================================
+# 数据增强配置
+# ============================================================================
+augmentation:
+  enable: true
+  rgb:
+    random_crop: 224
+    random_flip: true
+    color_jitter:
+      brightness: 0.2
+      contrast: 0.2
+      saturation: 0.2
+      hue: 0.1
+    gaussian_blur: 0.5
+  
+  hsi:
+    random_crop: 224
+    spectral_jitter: 0.1
+    noise_std: 0.01
+
+# ============================================================================
+# 日志和评估
+# ============================================================================
+logging:
+  log_interval: 10
+  tensorboard: true
+  wandb: false
+  
+eval:
+  enabled: true
+  metrics:
+    - "mse"
+    - "psnr"
+    - "ssim"
+    - "spectral_angle_mapper"
+    - "sam"
+  save_predictions: true
